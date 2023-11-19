@@ -1,12 +1,14 @@
 import unittest
 from unittest.mock import patch
 from io import StringIO
+from main import store_email_config, session, EmailConfig, send_email, retrieve_emails_imap, main
+
+
 
 class TestEmailFunctions(unittest.TestCase):
     @patch('builtins.input', side_effect=['test@example.com', 'smtp.example.com', 'testuser', 'testpassword', 'imap.example.com', 'testuser', 'testpassword'])
     @patch('getpass.getpass', side_effect=['testkey'])
     def test_store_email_config(self, mock_getpass, mock_input):
-        from ..main import store_email_config, session, EmailConfig
         store_email_config('test@example.com', 'smtp.example.com', 'testuser', 'testpassword', 'imap.example.com', 'testuser', 'testpassword')
         config = session.query(EmailConfig).filter_by(id='test@example.com').first()
         self.assertEqual(config.email_address, 'test@example.com')
@@ -17,7 +19,6 @@ class TestEmailFunctions(unittest.TestCase):
 
     @patch('builtins.input', side_effect=['1'])
     def test_retrieve_email_config(self, mock_input):
-        from ..main import retrieve_email_config
         email_addresses, smtp_servers, usernames, passwords, imap_servers, imap_usernames, imap_passwords = retrieve_email_config()
         self.assertEqual(email_addresses, ['test@example.com'])
         self.assertEqual(smtp_servers, ['smtp.example.com'])
@@ -30,7 +31,6 @@ class TestEmailFunctions(unittest.TestCase):
     @patch('builtins.input', side_effect=['test@example.com', 'smtp.example.com', 'testuser', 'testpassword', 'imap.example.com', 'testuser', 'testpassword'])
     @patch('getpass.getpass', side_effect=['testkey'])
     def test_send_email(self, mock_getpass, mock_input):
-        from ..main import send_email
         recipients = ['recipient1@example.com', 'recipient2@example.com']
         subject = 'Test Subject'
         body = 'Test Body'
@@ -44,7 +44,6 @@ class TestEmailFunctions(unittest.TestCase):
 
     @patch('builtins.input', side_effect=['imap.example.com', 'testuser', 'testpassword'])
     def test_retrieve_emails_imap(self, mock_input):
-        from ..main import retrieve_emails_imap
         with patch('imaplib.IMAP4_SSL') as mock_imap:
             mock_imap.return_value.login.return_value = ('OK', b'Success')
             mock_imap.return_value.select.return_value = ('OK', b'Success')
@@ -62,7 +61,6 @@ class TestEmailFunctions(unittest.TestCase):
     @patch('builtins.input', side_effect=['1', 's', 'recipient1@example.com, recipient2@example.com', 'Test Subject', 'Test Body'])
     @patch('getpass.getpass', side_effect=['testkey'])
     def test_main_send_email(self, mock_getpass, mock_input):
-        from ..main import main
         with patch('smtplib.SMTP') as mock_smtp, patch('sys.stdout', new=StringIO()) as mock_stdout:
             main()
             mock_smtp.assert_called_once_with('smtp.example.com')
@@ -75,7 +73,6 @@ class TestEmailFunctions(unittest.TestCase):
     @patch('builtins.input', side_effect=['1', 'r'])
     @patch('getpass.getpass', side_effect=['testkey'])
     def test_main_retrieve_emails(self, mock_getpass, mock_input):
-        from ..main import main
         with patch('imaplib.IMAP4_SSL') as mock_imap, patch('sys.stdout', new=StringIO()) as mock_stdout:
             mock_imap.return_value.login.return_value = ('OK', b'Success')
             mock_imap.return_value.select.return_value = ('OK', b'Success')
