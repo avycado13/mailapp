@@ -82,8 +82,8 @@ def retrieve_emails_imap(imap_server, username, password):
     for email_id in email_ids:
         _, data = mail.fetch(email_id, '(RFC822)')
         raw_email = data[0][1]
-        email = email.message_from_bytes(raw_email)
-        emails.append(email)
+        email_obj = email.message_from_bytes(raw_email)
+        emails.append(email_obj)
     mail.logout()
     return emails
 
