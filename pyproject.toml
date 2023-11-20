@@ -1,0 +1,12 @@
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+sqlalchemy = "^1.4.23"
+cryptography = "^3.4.8"
+gnupg = "^2.3.1"
+
+[tool.poetry.scripts]
+mailapp = "mailapp:main"
