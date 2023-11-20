@@ -1,20 +1,20 @@
-import getpass
-import sys
 import email
+import getpass
 import imaplib
-import smtplib
 import os
+import shutil
+import smtplib
+import subprocess
+import sys
+from email.mime.application import MIMEApplication
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
+
+import gnupg
 from cryptography.fernet import Fernet
-from sqlalchemy import create_engine, Column, String
+from sqlalchemy import Column, String, create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-import gnupg
-import subprocess
-import shutil
-
 
 Base = declarative_base()
 
@@ -209,9 +209,9 @@ def main():
         body = sys.stdin.read()
         
         encrypt = input('Encrypt the email body? (y/n): ')
-        if encrypt.lower() == 'y' and check_gpg_installed == True:
+        if encrypt.lower() == 'y' and check_gpg_installed:
             encrypt = True
-        elif encrypt.lower() == 'y' and check_gpg_installed == False:
+        elif encrypt.lower() == 'y' and not check_gpg_installed:
             encrypt = False
             print('GnuPG is not installed. Please install GnuPG to use GPG encryption/decryption.')
         else:
@@ -227,5 +227,5 @@ def main():
         print('Invalid action')
 
 if __name__ == '__main__':
-    gpg = gnupg.GPG(gnupghome=find_gpg_path())
+    gpg = gnupg.GPG()
     main()

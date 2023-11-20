@@ -2,11 +2,42 @@
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
+[project]
+name = "mailapp"
+version = "1.0.0"
+authors = [
+  { name="avycado13", email="gchundi@gmail.com" },
+]
+description = "A small email client"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/avycado13/mailapp"
+Issues = "https://github.com/avycado13/mailapp/issues"
+
 [tool.poetry.dependencies]
 python = "^3.9"
 sqlalchemy = "^1.4.23"
 cryptography = "^3.4.8"
 gnupg = "^2.3.1"
+email-validator = "^1.1.3"
+getpass = "^0.2.2"
+imaplib = "^0.1.3"
+os = "^0.1.1"
+shutil = "^1.7.0"
+smtplib = "^0.1.1"
+subprocess = "^0.1.0"
+sys = "^0.1.2"
 
-[tool.poetry.scripts]
-mailapp = "mailapp:main"
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+pycodestyle = "^2.7.0"
+autopep8 = "^1.5.7"
+flake8 = "^3.9.2"
+
