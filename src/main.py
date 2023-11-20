@@ -3,10 +3,18 @@ import sys
 import email
 import imaplib
 import smtplib
+import os
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 from cryptography.fernet import Fernet
 from sqlalchemy import create_engine, Column, String
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+import gnupg
+import subprocess
+import shutil
+
 
 Base = declarative_base()
 
@@ -30,6 +38,17 @@ def encrypt(text, key):
     cipher_suite = Fernet(key)
     cipher_text = cipher_suite.encrypt(text.encode())
     return cipher_text
+
+def check_gpg_installed():
+    try:
+        subprocess.run(['gpg', '--version'], check=True, capture_output=True)
+        return True
+    except subprocess.CalledProcessError:
+        return False
+    
+def find_gpg_path():
+    gpg_path = shutil.which('gpg')
+    return gpg_path
 
 def decrypt(cipher_text, key):
     cipher_suite = Fernet(key)
@@ -64,15 +83,32 @@ def retrieve_email_config():
         imap_passwords.append(decrypt(config.imap_password, key))
     return email_addresses, smtp_servers, usernames, passwords, imap_servers, imap_usernames, imap_passwords
 
-def send_email(email_address, smtp_server, username, password, recipients, subject, body):
+def send_email(email_address, smtp_server, username, password, recipients, subject, body, attachments=None, encrypt=False):
+    msg = MIMEMultipart()
+    msg['From'] = username
+    msg['To'] = ', '.join(recipients)
+    msg['Subject'] = subject
+
+    if encrypt:
+        encrypted_body = gpg.encrypt(body, recipients[0])
+        body = str(encrypted_body)
+
+    msg.attach(MIMEText(body, 'plain'))
+
+    if attachments:
+        for attachment in attachments:
+            with open(attachment, 'rb') as file:
+                part = MIMEApplication(file.read(), Name=os.path.basename(attachment))
+                part['Content-Disposition'] = f'attachment; filename="{os.path.basename(attachment)}"'
+                msg.attach(part)
+
     server = smtplib.SMTP(smtp_server)
     server.starttls()
     server.login(username, password)
-    message = f'Subject: {subject}\nTo: {", ".join(recipients)}\n\n{body}'
-    server.sendmail(username, recipients, message)
+    server.send_message(msg)
     server.quit()
 
-def retrieve_emails_imap(imap_server, username, password):
+def retrieve_emails_imap(imap_server, username, password, decrypt=False):
     mail = imaplib.IMAP4_SSL(imap_server)
     mail.login(username, password)
     mail.select('inbox')
@@ -83,6 +119,12 @@ def retrieve_emails_imap(imap_server, username, password):
         _, data = mail.fetch(email_id, '(RFC822)')
         raw_email = data[0][1]
         email_obj = email.message_from_bytes(raw_email)
+
+        if decrypt:
+            encrypted_body = email_obj.get_payload()
+            decrypted_body = gpg.decrypt(str(encrypted_body))
+            email_obj.set_payload(str(decrypted_body))
+
         emails.append(email_obj)
     mail.logout()
     return emails
@@ -111,7 +153,7 @@ def main():
         imap_username = imap_usernames[account_choice]
         imap_password = imap_passwords[account_choice]
     
-    action = input('What would you like to do? (send(s)/retrieve(r)/quit(q)): ')
+    action = input('What would you like to do? (send(s)/retrieve(r)/attach(a)/quit(q)): ')
     
     if action.lower() == 'send' or action.lower() == 's':
         recipients = input('Enter the recipients (separated by commas): ').split(',')
@@ -121,21 +163,69 @@ def main():
         print('Enter the email body (press Ctrl+D on a new line to finish):')
         body = sys.stdin.read()
         
-        send_email(email_address, smtp_server, username, password, recipients, subject, body)
+        attachments = []
+        attach_file = input('Attach a file? (y/n): ')
+        if attach_file.lower() == 'y':
+            file_path = input('Enter the file path: ')
+            attachments.append(file_path)
+        
+        encrypt = input('Encrypt the email body? (y/n): ')
+        if encrypt.lower() == 'y' and check_gpg_installed == True:
+            encrypt = True
+        elif encrypt.lower() == 'y' and check_gpg_installed == False:
+            encrypt = False
+            print('GnuPG is not installed. Please install GnuPG to use GPG encryption/decryption.')
+        else:
+            encrypt = False
+        
+        send_email(email_address, smtp_server, username, password, recipients, subject, body, attachments, encrypt)
         print('Email sent!')
     
     elif action.lower() == 'retrieve' or action.lower() == 'r':
+        decrypt = input('Decrypt the email body? (y/n): ')
+        if decrypt.lower() == 'y':
+            decrypt = True
+        else:
+            decrypt = False
+        
         print('Retrieving emails...')
-        emails = retrieve_emails_imap(imap_server, imap_username, imap_password)
+        emails = retrieve_emails_imap(imap_server, imap_username, imap_password, decrypt)
         for email in emails:
             print('From:', email['From'])
             print('Subject:', email['Subject'])
             print('Body:', email.get_payload())
             print('---')
+    
+    elif action.lower() == 'attach' or action.lower() == 'a':
+        attachments = []
+        attach_file = input('Enter the file path: ')
+        attachments.append(attach_file)
+        
+        recipients = input('Enter the recipients (separated by commas): ').split(',')
+        recipients = [recipient.strip() for recipient in recipients]
+        
+        subject = input('Enter the email subject: ')
+        print('Enter the email body (press Ctrl+D on a new line to finish):')
+        body = sys.stdin.read()
+        
+        encrypt = input('Encrypt the email body? (y/n): ')
+        if encrypt.lower() == 'y' and check_gpg_installed == True:
+            encrypt = True
+        elif encrypt.lower() == 'y' and check_gpg_installed == False:
+            encrypt = False
+            print('GnuPG is not installed. Please install GnuPG to use GPG encryption/decryption.')
+        else:
+            encrypt = False
+        
+        send_email(email_address, smtp_server, username, password, recipients, subject, body, attachments, encrypt)
+        print('Email sent!')
+    
     elif action.lower() == 'quit' or action.lower() == 'q':
         sys.exit(0)
+    
     else:
         print('Invalid action')
 
 if __name__ == '__main__':
+    gpg = gnupg.GPG(gnupghome=find_gpg_path())
     main()
