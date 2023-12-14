@@ -219,7 +219,7 @@ def main():
         
         send_email(email_address, smtp_server, username, password, recipients, subject, body, attachments, encrypt)
         print('Email sent!')
-    
+
     elif action.lower() == 'quit' or action.lower() == 'q':
         sys.exit(0)
     

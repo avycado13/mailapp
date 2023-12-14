@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 from io import StringIO
-from python_projects.mailapp.src.mailapp.mail import store_email_config, session, EmailConfig, send_email, retrieve_emails_imap, main
+from ..src.mailapp.mail import store_email_config, session, EmailConfig, send_email, retrieve_emails_imap, main
 
 
 
