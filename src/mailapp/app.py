@@ -5,8 +5,8 @@ from mailapp.widgets.email_list import EmailList
 from mailapp.widgets.sidebar import Sidebar
 
 
-class StopwatchApp(App):
-    """A Textual app to manage stopwatches."""
+class MailApp(App):
+    """A Textual app to manage emails."""
 
     BINDINGS = [("d", "toggle_dark", "Toggle dark mode")]
 
@@ -21,5 +21,3 @@ class StopwatchApp(App):
         self.theme = (
             "textual-dark" if self.theme == "textual-light" else "textual-light"
         )
-
-

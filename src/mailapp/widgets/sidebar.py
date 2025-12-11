@@ -1,13 +1,15 @@
-from textual.widgets import Static, Tree
-from textual.widgets.tree import TreeNode
-from textual.containers import Container, ScrollableContainer
 from dataclasses import dataclass
 from typing import Optional
+
+from textual.containers import ScrollableContainer
+from textual.widgets import Tree
+from textual.widgets.tree import TreeNode
 
 
 @dataclass
 class AccountFolder:
     """Represents a folder within an account."""
+
     name: str
     unread_count: int = 0
     folder_type: str = "custom"  # inbox, sent, drafts, trash, custom
@@ -16,6 +18,7 @@ class AccountFolder:
 @dataclass
 class Account:
     """Represents an email account."""
+
     name: str
     email: str
     folders: list[AccountFolder]
@@ -78,9 +81,7 @@ class Sidebar(ScrollableContainer):
         """Add an account to the sidebar."""
         self.accounts.append(account)
         account_node = self.tree.root.add(
-            f"👤 {account.email}",
-            expand=True,
-            data=account
+            f"👤 {account.email}", expand=True, data=account
         )
 
         for folder in account.folders:
@@ -113,17 +114,21 @@ class Sidebar(ScrollableContainer):
         for node in self.tree.root.children:
             if hasattr(node, "data") and isinstance(node.data, Account):
                 if node.data.email == account_email:
-                    folder.folders.append(folder)
+                    node.data.folders.append(folder)
                     self._add_folder(node, folder)
                     return
 
-    def update_unread_count(self, account_email: str, folder_name: str, count: int) -> None:
+    def update_unread_count(
+        self, account_email: str, folder_name: str, count: int
+    ) -> None:
         """Update the unread count for a folder."""
         for account_node in self.tree.root.children:
             if hasattr(account_node, "data") and isinstance(account_node.data, Account):
                 if account_node.data.email == account_email:
                     for folder_node in account_node.children:
-                        if hasattr(folder_node, "data") and isinstance(folder_node.data, AccountFolder):
+                        if hasattr(folder_node, "data") and isinstance(
+                            folder_node.data, AccountFolder
+                        ):
                             if folder_node.data.name == folder_name:
                                 folder_node.data.unread_count = count
                                 self._update_folder_label(folder_node)
@@ -150,13 +155,21 @@ class Sidebar(ScrollableContainer):
     def get_selected_folder(self) -> Optional[AccountFolder]:
         """Get the currently selected folder."""
         selected = self.tree.cursor_node
-        if selected and hasattr(selected, "data") and isinstance(selected.data, AccountFolder):
+        if (
+            selected
+            and hasattr(selected, "data")
+            and isinstance(selected.data, AccountFolder)
+        ):
             return selected.data
         return None
 
     def get_selected_account(self) -> Optional[Account]:
         """Get the currently selected account."""
         selected = self.tree.cursor_node
-        if selected and hasattr(selected, "data") and isinstance(selected.data, Account):
+        if (
+            selected
+            and hasattr(selected, "data")
+            and isinstance(selected.data, Account)
+        ):
             return selected.data
         return None
